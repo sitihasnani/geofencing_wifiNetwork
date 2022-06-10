@@ -9,7 +9,7 @@ import UIKit
 import MapKit
 import CoreLocation
 
-class ViewController: UIViewController, MKMapViewDelegate {
+class ViewController: UIViewController{
 
     @IBOutlet weak var mapView: MKMapView!
     
@@ -25,34 +25,31 @@ class ViewController: UIViewController, MKMapViewDelegate {
             locationManager.desiredAccuracy = kCLLocationAccuracyBest
             locationManager.startUpdatingLocation()
         }
-//
-//        mapView.delegate = self
-//        mapView.mapType = .standard
-//        mapView.isZoomEnabled = true
-//        mapView.isScrollEnabled = true
-//
-//        if let coor = mapView.userLocation.location?.coordinate{
-//            mapView.setCenter(coor, animated: true)
-//        }
         
-        
-        
+        let geofenceRegionCenter = CLLocationCoordinate2DMake(2.926015, 101.636093)
+        let geofenceRegion = CLCircularRegion(center: geofenceRegionCenter, radius: 500, identifier: "notifymeonExit")
+        geofenceRegion.notifyOnExit = true
+        geofenceRegion.notifyOnEntry = true
+        locationManager.startMonitoring(for: geofenceRegion)
+        let circle = MKCircle(center: geofenceRegion.center, radius: geofenceRegion.radius)
+        mapView.addOverlay(circle)
+
     }
     
     @IBAction func addRegion(_ sender: Any) {
         print("Add Region")
-        guard let longPress = sender as? UILongPressGestureRecognizer else
-        { return }
-        
-        let touchLocation = longPress.location(in: mapView)
-        //convert location we touch to coordinate, CGPoint to coordinate
-        let coordinate = mapView.convert(touchLocation, toCoordinateFrom: mapView)
-        let region = CLCircularRegion(center: coordinate, radius: 200, identifier: "geofence")
-        mapView.removeOverlay(mapView.overlays as! MKOverlay)
-        locationManager.startMonitoring(for: region)
-        let circle = MKCircle(center: coordinate, radius: region.radius)
-        mapView.addOverlay(circle)
-        
+//        guard let longPress = sender as? UILongPressGestureRecognizer else
+//        { return }
+//
+//        let touchLocation = longPress.location(in: mapView)
+//        //convert location we touch to coordinate, CGPoint to coordinate
+//        let coordinate = mapView.convert(touchLocation, toCoordinateFrom: mapView)
+//        let region = CLCircularRegion(center: coordinate, radius: 200, identifier: "geofence")
+//        mapView.removeOverlay(mapView.overlays as! MKOverlay)
+//        locationManager.startMonitoring(for: region)
+//        let circle = MKCircle(center: coordinate, radius: region.radius)
+//        mapView.addOverlay(circle)
+//
     }
     
 
@@ -67,7 +64,7 @@ extension ViewController: CLLocationManagerDelegate{
         locationManager.stopUpdatingLocation()
         mapView.showsUserLocation = true
         
-        let span = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+        let span = MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
         let region = MKCoordinateRegion(center: locValue, span: span)
         mapView.setRegion(region, animated: true)
         
@@ -77,6 +74,29 @@ extension ViewController: CLLocationManagerDelegate{
 //        annotation.subtitle = "current location"
 //        mapView.addAnnotation(annotation)
         
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
+        let alert = UIAlertController(title: "Oh No!", message: "You Exit The Region", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: nil))
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
+        let alert = UIAlertController(title: "Oh WoWW!", message: "You Enter The Region", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: nil))
+    }
+}
+
+extension ViewController: MKMapViewDelegate{
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        guard let circleOverlay = overlay as? MKCircle else { return
+            MKOverlayRenderer()
+        }
+        let circleRenderer = MKCircleRenderer(circle: circleOverlay)
+        circleRenderer.strokeColor = .red
+        circleRenderer.fillColor = .red
+        circleRenderer.alpha = 0.5
+        return circleRenderer
     }
 }
 
