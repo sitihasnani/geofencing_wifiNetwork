@@ -21,7 +21,6 @@
                                 <gestureRecognizers/>
                                 <connections>
                                     <outlet property="delegate" destination="BYZ-38-t0r" id="las-TH-CqW"/>
-                                    <outletCollection property="gestureRecognizers" destination="9hM-bV-sOp" appends="YES" id="P2E-OM-0td"/>
                                 </connections>
                             </mapView>
                         </subviews>
@@ -39,11 +38,6 @@
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
-                <pongPressGestureRecognizer allowableMovement="10" minimumPressDuration="0.5" id="9hM-bV-sOp">
-                    <connections>
-                        <action selector="addRegion:" destination="BYZ-38-t0r" id="FCX-sc-gU0"/>
-                    </connections>
-                </pongPressGestureRecognizer>
             </objects>
             <point key="canvasLocation" x="18.840579710144929" y="68.973214285714278"/>
         </scene>

@@ -8,50 +8,89 @@
 import UIKit
 import MapKit
 import CoreLocation
+import SystemConfiguration.CaptiveNetwork
+import Network
+import NetworkExtension
 
 class ViewController: UIViewController{
 
     @IBOutlet weak var mapView: MKMapView!
     
     let locationManager = CLLocationManager()
+    let monitor = NWPathMonitor(requiredInterfaceType: .wifi)
+    let queue = DispatchQueue(label: "InternetConnectionMonitor")
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        print("disappear")
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: "MaxisB0709")
+        print("disappear")
+    }
+    
+   
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        locationManager.requestAlwaysAuthorization()
-        
-        if CLLocationManager.locationServicesEnabled(){
-            locationManager.delegate = self
-            locationManager.desiredAccuracy = kCLLocationAccuracyBest
-            locationManager.startUpdatingLocation()
-        }
-        
-        let geofenceRegionCenter = CLLocationCoordinate2DMake(2.926015, 101.636093)
-        let geofenceRegion = CLCircularRegion(center: geofenceRegionCenter, radius: 500, identifier: "notifymeonExit")
-        geofenceRegion.notifyOnExit = true
-        geofenceRegion.notifyOnEntry = true
-        locationManager.startMonitoring(for: geofenceRegion)
-        let circle = MKCircle(center: geofenceRegion.center, radius: geofenceRegion.radius)
-        mapView.addOverlay(circle)
+        monitor.pathUpdateHandler = { pathUpdateHandler in
+            if pathUpdateHandler.status == .satisfied {
+                print("Internet connection is on.")
+                NEHotspotConfigurationManager.shared.getConfiguredSSIDs { (ssidsArray) in
+                            print("ssidsArray.count==\(ssidsArray.count)")
+                            for ssid in ssidsArray {
+                                print("Connected ssid = ",ssid)
+                            }
+                        }
+//                let ssid = UIDevice.
+//                print("SSID now :", ssid)
+              
+//                self.getLocation()
+                
+            } else {
+                print("There's no internet connection.")
+                let wiFiConfig = NEHotspotConfiguration(ssid: "MaxisB0709", passphrase: "Danial@18", isWEP: false)
+                wiFiConfig.joinOnce = true
+                NEHotspotConfigurationManager.shared.apply(wiFiConfig) { error in
+                            if let error = error {
+                                print(error.localizedDescription)
+                            }
+                            else {
+                                print("successfully connected!")
+                                self.getLocation()
+                                
+                                
+                                
+                                // user confirmed
+                            }
+                        }
+                
+                
+                
+                }
+            }
+
+        monitor.start(queue: queue)
+
 
     }
     
-    @IBAction func addRegion(_ sender: Any) {
-        print("Add Region")
-//        guard let longPress = sender as? UILongPressGestureRecognizer else
-//        { return }
-//
-//        let touchLocation = longPress.location(in: mapView)
-//        //convert location we touch to coordinate, CGPoint to coordinate
-//        let coordinate = mapView.convert(touchLocation, toCoordinateFrom: mapView)
-//        let region = CLCircularRegion(center: coordinate, radius: 200, identifier: "geofence")
-//        mapView.removeOverlay(mapView.overlays as! MKOverlay)
-//        locationManager.startMonitoring(for: region)
-//        let circle = MKCircle(center: coordinate, radius: region.radius)
-//        mapView.addOverlay(circle)
-//
+    func getLocation(){
+        self.locationManager.requestAlwaysAuthorization()
+        if CLLocationManager.locationServicesEnabled(){
+            self.locationManager.delegate = self
+            self.locationManager.desiredAccuracy = kCLLocationAccuracyBest
+            self.locationManager.distanceFilter = 200
+            self.locationManager.requestAlwaysAuthorization()
+            self.locationManager.startUpdatingLocation()
+            }
+       
+        self.locationManager.startMonitoringSignificantLocationChanges()
+//        print("wifi available:", self.fetchSSIDInfo())
     }
     
+ 
 
 }
 
@@ -60,6 +99,7 @@ extension ViewController: CLLocationManagerDelegate{
     //show current location to maps
     // blue dots in maps
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+       
         let locValue:CLLocationCoordinate2D = manager.location!.coordinate
         locationManager.stopUpdatingLocation()
         mapView.showsUserLocation = true
@@ -68,11 +108,14 @@ extension ViewController: CLLocationManagerDelegate{
         let region = MKCoordinateRegion(center: locValue, span: span)
         mapView.setRegion(region, animated: true)
         
-//        let annotation = MKPointAnnotation()
-//        annotation.coordinate = locValue
-//        annotation.title = "Geofencing"
-//        annotation.subtitle = "current location"
-//        mapView.addAnnotation(annotation)
+        let geofenceRegionCenter = CLLocationCoordinate2DMake(locValue.latitude, locValue.longitude)
+        let geofenceRegion = CLCircularRegion(center: geofenceRegionCenter, radius: 500, identifier: "notifymeonExit")
+        geofenceRegion.notifyOnExit = true
+        geofenceRegion.notifyOnEntry = true
+        locationManager.startMonitoring(for: geofenceRegion)
+        let circle = MKCircle(center: geofenceRegion.center, radius: geofenceRegion.radius)
+        mapView.addOverlay(circle)
+        
         
     }
     
