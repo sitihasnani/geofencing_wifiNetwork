@@ -19,13 +19,15 @@ class ViewController: UIViewController{
     let locationManager = CLLocationManager()
     let monitor = NWPathMonitor(requiredInterfaceType: .wifi)
     let queue = DispatchQueue(label: "InternetConnectionMonitor")
+    var ssidName: String = "RAMSSOLGROUP_5Ghz"
+    var password: String = "RG55459225"
     
     override func viewWillDisappear(_ animated: Bool) {
         print("disappear")
     }
     
     override func viewDidDisappear(_ animated: Bool) {
-        NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: "MaxisB0709")
+        NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: "RAMSSOLGROUP_5Ghz")
         print("disappear")
     }
     
@@ -33,40 +35,29 @@ class ViewController: UIViewController{
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.getConfiguredNetwork(checkWifiResgion: true)
         
         monitor.pathUpdateHandler = { pathUpdateHandler in
             if pathUpdateHandler.status == .satisfied {
                 print("Internet connection is on.")
+                self.getConfiguredNetwork(checkWifiResgion: false)
                 NEHotspotConfigurationManager.shared.getConfiguredSSIDs { (ssidsArray) in
                             print("ssidsArray.count==\(ssidsArray.count)")
                             for ssid in ssidsArray {
                                 print("Connected ssid = ",ssid)
+                                if(ssid == self.ssidName){
+                                    self.getLocation()
+                                } else {
+                                    print("You are not in the region")
+                                    self.connectToWifi()
+                                }
                             }
                         }
-//                let ssid = UIDevice.
-//                print("SSID now :", ssid)
-              
-//                self.getLocation()
+
                 
             } else {
                 print("There's no internet connection.")
-                let wiFiConfig = NEHotspotConfiguration(ssid: "MaxisB0709", passphrase: "Danial@18", isWEP: false)
-                wiFiConfig.joinOnce = true
-                NEHotspotConfigurationManager.shared.apply(wiFiConfig) { error in
-                            if let error = error {
-                                print(error.localizedDescription)
-                            }
-                            else {
-                                print("successfully connected!")
-                                self.getLocation()
-                                
-                                
-                                
-                                // user confirmed
-                            }
-                        }
-                
-                
+                self.connectToWifi()
                 
                 }
             }
@@ -87,8 +78,39 @@ class ViewController: UIViewController{
             }
        
         self.locationManager.startMonitoringSignificantLocationChanges()
-//        print("wifi available:", self.fetchSSIDInfo())
+        print("You are in the region")
     }
+    
+    func connectToWifi(){
+        let wiFiConfig = NEHotspotConfiguration(ssid: self.ssidName, passphrase: self.password, isWEP: false)
+//        wiFiConfig.joinOnce = true
+        NEHotspotConfigurationManager.shared.apply(wiFiConfig) { error in
+            if let error = error {
+                print(error.localizedDescription)
+                }
+            else {
+                print("successfully connected!")
+//                NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: self.ssidName)
+                self.getLocation()
+                        
+                }
+                }
+    }
+    
+    func getConfiguredNetwork(checkWifiResgion: Bool){
+        NEHotspotConfigurationManager.shared.getConfiguredSSIDs { (ssidsArray) in
+                    print("ssidsArray.count==\(ssidsArray.count)")
+                    for ssid in ssidsArray {
+                        print("Connected ssid = ",ssid)
+                        if(ssid == self.ssidName && checkWifiResgion == true){
+                            self.getLocation()
+                        } else {
+                            print("You are not in the region")
+                        }
+                    }
+                }
+    }
+    
     
  
 
